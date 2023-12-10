@@ -8,6 +8,7 @@
 </template>
 
 <script>
+import { ref, watch, onMounted } from "vue";
 import * as THREE from "three";
 import * as dat from "dat.gui";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -22,26 +23,20 @@ export default {
       type: Number,
       required: true,
     },
-  },
-  data() {
-    return {
-      localEditableHeight: this.editableHeight,
-      localEditableColor: "#00ff00",
-      form: null,
-    };
-  },
-  watch: {
-    editableHeight(newValue) {
-      this.localEditableHeight = newValue;
-      this.updateGeometry();
+    editableColor: {
+      type: String,
+      default: "#00ff00",
     },
   },
-  mounted() {
-    this.init();
-    this.setupColorControls();
-  },
-  methods: {
-    init() {
+  setup(props) {
+    const localEditableHeight = ref(props.editableHeight);
+    const localEditableColor = ref(props.editableColor);
+    const form = ref(null);
+    const threeContainer = ref(null);
+    const colorControls = ref(null);
+    const heightControls = ref(null);
+
+    const init = () => {
       const scene = new THREE.Scene();
       const sizes = { width: 800, height: 600 };
       const camera = new THREE.PerspectiveCamera(
@@ -51,20 +46,20 @@ export default {
         1000
       );
       const shape = new THREE.Shape(
-        this.shapePoints.map((point) => new THREE.Vector2(point[0], point[1]))
+        props.shapePoints.map((point) => new THREE.Vector2(point[0], point[1]))
       );
 
       const geometry = new THREE.ExtrudeGeometry(shape, {
-        depth: this.localEditableHeight,
+        depth: localEditableHeight.value,
       });
       const renderer = new THREE.WebGLRenderer();
       renderer.setSize(sizes.width, sizes.height);
-      this.$refs.threeContainer.appendChild(renderer.domElement);
+      threeContainer.value.appendChild(renderer.domElement);
 
       const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-      const form = new THREE.Mesh(geometry, material);
-      scene.add(form);
-      this.form = form;
+      const formValue = new THREE.Mesh(geometry, material);
+      form.value = formValue;
+      scene.add(formValue);
 
       window.addEventListener("resize", () => {
         sizes.width = window.innerWidth;
@@ -81,10 +76,10 @@ export default {
       controls.update();
 
       const gui = new dat.GUI();
-      gui.add(this, "localEditableHeight", 0, 50).onChange((value) => {
-        this.form.scale.z = value;
+      gui.add(localEditableHeight, "value", 0, 50).onChange((value) => {
+        formValue.scale.z = value;
       });
-      this.$refs.heightControls.appendChild(gui.domElement);
+      heightControls.value.appendChild(gui.domElement);
       camera.position.z = 0;
 
       const animate = () => {
@@ -94,34 +89,59 @@ export default {
       };
 
       animate();
-    },
+    };
 
-    updateGeometry() {
+    const updateGeometry = () => {
       const shape = new THREE.Shape(
-        this.shapePoints.map((point) => new THREE.Vector2(point[0], point[1]))
+        props.shapePoints.map((point) => new THREE.Vector2(point[0], point[1]))
       );
       const geometry = new THREE.ExtrudeGeometry(shape, {
-        depth: this.localEditableHeight,
+        depth: localEditableHeight.value,
       });
-      this.form.geometry = geometry;
-    },
+      form.value.geometry = geometry;
+    };
 
-    updateMaterialColor() {
-      this.form.material.color.set(this.localEditableColor);
-    },
+    const updateMaterialColor = () => {
+      form.value.material.color.set(localEditableColor.value);
+    };
 
-    setupColorControls() {
+    const setupColorControls = () => {
       const gui = new dat.GUI({ autoPlace: false });
-      const colorObject = { color: this.localEditableColor };
+      const colorObject = { color: localEditableColor.value };
       const colorController = gui.addColor(colorObject, "color");
 
       colorController.onChange(() => {
-        this.localEditableColor = colorObject.color;
-        this.updateMaterialColor();
+        localEditableColor.value = colorObject.color;
+        updateMaterialColor();
       });
 
-      this.$refs.colorControls.appendChild(gui.domElement);
-    },
+      colorControls.value.appendChild(gui.domElement);
+    };
+
+    onMounted(() => {
+      init();
+      setupColorControls();
+    });
+
+    watch(
+      () => props.editableHeight,
+      (newValue) => {
+        localEditableHeight.value = newValue;
+        updateGeometry();
+      }
+    );
+
+    return {
+      localEditableHeight,
+      localEditableColor,
+      form,
+      updateGeometry,
+      updateMaterialColor,
+      setupColorControls,
+      threeContainer,
+      colorControls,
+      heightControls,
+    };
   },
 };
 </script>

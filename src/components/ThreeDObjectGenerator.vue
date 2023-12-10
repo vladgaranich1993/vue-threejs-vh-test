@@ -61,18 +61,9 @@ export default {
       form.value = formValue;
       scene.add(formValue);
 
-      window.addEventListener("resize", () => {
-        sizes.width = window.innerWidth;
-        sizes.height = window.innerHeight;
-        camera.aspect = sizes.width / sizes.height;
-        camera.updateProjectionMatrix();
-        renderer.setSize(sizes.width, sizes.height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      });
-
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
-      camera.position.set(0, 20, 100);
+      camera.position.set(0, 30, 100);
       controls.update();
 
       const gui = new dat.GUI();
